@@ -119,6 +119,9 @@ GtkStyleContext *context_label_input_error;
 GtkStyleContext *context_tv_mac_filter;
 GtkStyleContext *context_entry_gateway;
 
+// Track if we enabled firewall 
+static int firewall_dhcp_enabled_by_us = 0;
+
 
 const char** iface_list;
 const char** wifi_iface_list;
@@ -137,6 +140,14 @@ static void *stopHp(void *) {
         start_pb_pulse();
         lock_all_views(TRUE);
         startShell(build_kill_create_ap_command(running_info[0]));
+        
+        // If we enabled firewall DHCP, disable it now
+        if (firewall_dhcp_enabled_by_us) {
+            disable_firewall_dhcp();
+            firewall_dhcp_enabled_by_us = 0;
+            printf("Firewall DHCP service was disabled\n");
+        }
+        
         g_thread_new("init_running",init_running_info,NULL);
     }
     return 0;
@@ -156,6 +167,14 @@ static void on_create_hp_clicked(GtkWidget *widget, gpointer data) {
         set_error_text("");
     }
 
+    // Check and enable firewall DHCP if needed
+    int firewall_result = check_and_enable_firewall_dhcp();
+    if (firewall_result == 1) {
+        printf("Firewall DHCP service was enabled for hotspot\n");
+        firewall_dhcp_enabled_by_us = 1;
+    } else if (firewall_result == -1) {
+        set_error_text("Warning: Could not configure firewall");
+    }
 
     startShell(build_wh_mkconfig_command(&configValues));
 

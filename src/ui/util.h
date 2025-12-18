@@ -36,5 +36,7 @@ void rand_str(char *dest, size_t length);
 int isValidMacAddress(const char*);
 int isValidAcceptedMacs(const char*);
 int isValidIPaddress(const char*);
+int check_and_enable_firewall_dhcp(void);
+void disable_firewall_dhcp(void);
 
 #endif //WIHOTSPOT_UTIL_H

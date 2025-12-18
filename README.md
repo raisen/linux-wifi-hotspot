@@ -10,6 +10,7 @@
 * Use aa-complain instead of complain to fix the permission issue for dnsmasq
 * Fix some 5Ghz band not working issue
 * Compatible with iw 6.7
+* Firewalld auto-config enables DHCP service when starting hotspot (contrib: raisen)
 
 #### Project Update
 

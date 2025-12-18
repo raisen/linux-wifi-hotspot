@@ -149,3 +149,67 @@ int isValidIPaddress(const char * ip){
     }
 
 }
+
+int check_and_enable_firewall_dhcp(void) {
+    FILE *fp;
+    char buffer[128];
+    int dhcp_enabled = 0;
+    
+    // Check if firewalld is running
+    fp = popen("systemctl is-active firewalld 2>/dev/null", "r");
+    if (fp == NULL) {
+        return 0; // Firewalld not available, no action needed
+    }
+    
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (strncmp(buffer, "active", 6) != 0) {
+            pclose(fp);
+            return 0; // Firewalld not running, no action needed
+        }
+    }
+    pclose(fp);
+    
+    // Check if DHCP service is already enabled
+    fp = popen("firewall-cmd --list-services 2>/dev/null | grep -w dhcp", "r");
+    if (fp == NULL) {
+        return -1;
+    }
+    
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        dhcp_enabled = 1;
+    }
+    pclose(fp);
+    
+    if (dhcp_enabled) {
+        return 0; // DHCP already enabled
+    }
+    
+    // DHCP not enabled, enable it
+    system("pkexec firewall-cmd --add-service=dhcp --permanent >/dev/null 2>&1");
+    system("pkexec firewall-cmd --add-service=dhcp >/dev/null 2>&1");
+    
+    return 1; // DHCP was enabled by us
+}
+
+void disable_firewall_dhcp(void) {
+    FILE *fp;
+    char buffer[128];
+    
+    // Check if firewalld is running
+    fp = popen("systemctl is-active firewalld 2>/dev/null", "r");
+    if (fp == NULL) {
+        return;
+    }
+    
+    if (fgets(buffer, sizeof(buffer), fp) != NULL) {
+        if (strncmp(buffer, "active", 6) != 0) {
+            pclose(fp);
+            return;
+        }
+    }
+    pclose(fp);
+    
+    // Remove DHCP service
+    system("pkexec firewall-cmd --remove-service=dhcp --permanent >/dev/null 2>&1");
+    system("pkexec firewall-cmd --remove-service=dhcp >/dev/null 2>&1");
+}
